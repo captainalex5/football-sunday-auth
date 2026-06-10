@@ -1,15 +1,705 @@
 <!DOCTYPE html>
-<html>
-<script>
-  const params = new URLSearchParams(window.location.search);
-  const target = decodeURIComponent(params.get('state') || '');
-  const code   = params.get('code')  || '';
-  const error  = params.get('error') || '';
-  if (target && (code || error)) {
-    window.location.href = error
-      ? `${target}?error=${encodeURIComponent(error)}`
-      : `${target}?code=${encodeURIComponent(code)}`;
-  }
-</script>
-<body>Redirecting to Football Sunday...</body>
+<html lang="en">
+<head>
+  <!-- Yahoo OAuth redirect — fires before any content renders, harmless on normal visits -->
+  <script>
+    (function(){
+      var p = new URLSearchParams(window.location.search);
+      var target = decodeURIComponent(p.get('state') || '');
+      var code   = p.get('code')  || '';
+      var error  = p.get('error') || '';
+      if (target && (code || error)) {
+        window.location.href = error
+          ? target + '?error=' + encodeURIComponent(error)
+          : target + '?code='  + encodeURIComponent(code);
+      }
+    })();
+  </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Football Sunday — Your NFL Command Center</title>
+  <meta name="description" content="The all-in-one NFL app for fantasy players, bettors, and fans. AI-powered insights, live line movement tracking, and your full game command center." />
+  <meta property="og:title" content="Football Sunday — Your NFL Command Center" />
+  <meta property="og:description" content="Fantasy, betting, scores, and AI Coach in one place." />
+  <meta property="og:image" content="https://captainalex5.github.io/football-sunday-auth/og.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0a0a;
+      --surface:  #141414;
+      --surface2: #1e1e1e;
+      --border:   #2a2a2a;
+      --green:    #22c55e;
+      --green-dim:#16a34a;
+      --white:    #ffffff;
+      --muted:    #71717a;
+      --text:     #e4e4e7;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ────────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 40px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .nav-logo-icon { font-size: 24px; }
+    .nav-logo-text { display: flex; flex-direction: column; line-height: 1.1; }
+    .nav-logo-text span:first-child { color: var(--white); font-size: 12px; font-weight: 900; letter-spacing: 1px; }
+    .nav-logo-text span:last-child  { color: var(--green);  font-size: 12px; font-weight: 900; letter-spacing: 1px; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-link { color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+    .nav-link:hover { color: var(--white); }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--green); color: #000;
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 14px; font-weight: 700; text-decoration: none;
+      transition: background .2s, transform .1s;
+    }
+    .btn-primary:hover { background: #16a34a; transform: translateY(-1px); }
+
+    /* ── HERO ───────────────────────────────────────────────── */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 800px; height: 500px;
+      background: radial-gradient(ellipse at center, rgba(34,197,94,0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3);
+      color: var(--green); padding: 6px 16px; border-radius: 99px;
+      font-size: 13px; font-weight: 600; margin-bottom: 28px;
+      letter-spacing: 0.3px;
+    }
+    .hero h1 {
+      font-size: clamp(40px, 7vw, 76px);
+      font-weight: 900; line-height: 1.05; letter-spacing: -2px;
+      color: var(--white); max-width: 900px; margin-bottom: 24px;
+    }
+    .hero h1 .highlight { color: var(--green); }
+    .hero p {
+      font-size: clamp(16px, 2vw, 20px); color: var(--muted);
+      max-width: 600px; margin-bottom: 40px; line-height: 1.7;
+    }
+    .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 64px; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 20px; border-radius: 10px;
+      font-size: 14px; font-weight: 600; text-decoration: none;
+      transition: border-color .2s, transform .1s;
+    }
+    .btn-secondary:hover { border-color: var(--green); transform: translateY(-1px); }
+
+    /* ── PHONE MOCKUP ───────────────────────────────────────── */
+    .phone-wrapper {
+      display: flex; gap: 24px; justify-content: center;
+      align-items: flex-end; flex-wrap: wrap;
+    }
+    .phone {
+      width: 220px; border-radius: 36px;
+      background: var(--surface); border: 2px solid var(--border);
+      overflow: hidden; position: relative;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .phone.tall  { height: 440px; }
+    .phone.short { height: 360px; transform: translateY(40px); opacity: 0.7; }
+    .phone-notch {
+      height: 28px; background: var(--bg); border-radius: 0 0 16px 16px;
+      margin: 0 auto; width: 100px; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    }
+    .phone-screen {
+      padding: 40px 14px 14px;
+      height: 100%;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .screen-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .screen-title { color: var(--white); font-size: 15px; font-weight: 700; }
+    .screen-badge {
+      background: var(--green); color: #000; border-radius: 6px;
+      font-size: 10px; font-weight: 700; padding: 2px 7px;
+    }
+    .score-card {
+      background: var(--surface2); border-radius: 12px; padding: 12px;
+      border: 1px solid var(--border);
+    }
+    .score-row { display: flex; justify-content: space-between; align-items: center; }
+    .team-name { color: var(--text); font-size: 11px; font-weight: 600; }
+    .score-num { color: var(--white); font-size: 16px; font-weight: 800; }
+    .score-divider { width: 100%; height: 1px; background: var(--border); margin: 8px 0; }
+    .live-pill {
+      background: rgba(239,68,68,0.2); color: #f87171;
+      border: 1px solid rgba(239,68,68,0.3); border-radius: 4px;
+      font-size: 9px; font-weight: 700; padding: 1px 6px; letter-spacing: 0.5px;
+    }
+    .stat-row { display: flex; justify-content: space-between; margin-top: 4px; }
+    .stat-item { color: var(--muted); font-size: 9px; }
+    .stat-item span { color: var(--green); font-weight: 700; }
+    .line-card {
+      background: var(--surface2); border-radius: 10px; padding: 10px;
+      border-left: 3px solid var(--green);
+    }
+    .line-label { color: var(--muted); font-size: 9px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .line-value { color: var(--white); font-size: 12px; font-weight: 700; }
+    .line-move  { color: var(--green); font-size: 10px; font-weight: 700; margin-top: 2px; }
+    .chat-bubble-them, .chat-bubble-me {
+      border-radius: 14px; padding: 8px 10px; font-size: 10px; line-height: 1.4; max-width: 85%;
+    }
+    .chat-bubble-them { background: var(--surface2); color: var(--text); border-bottom-left-radius: 4px; }
+    .chat-bubble-me   { background: var(--green); color: #000; font-weight: 600; border-bottom-right-radius: 4px; align-self: flex-end; }
+    .chat-coach { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); border-radius: 10px; padding: 8px; }
+    .chat-coach-label { color: var(--green); font-size: 8px; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 3px; }
+    .chat-coach-text  { color: var(--text); font-size: 9px; line-height: 1.5; }
+
+    /* ── STATS BAR ──────────────────────────────────────────── */
+    .stats-bar {
+      display: flex; justify-content: center; gap: 0; flex-wrap: wrap;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      margin: 80px 0 0; background: var(--surface);
+    }
+    .stat-block {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 32px 48px; border-right: 1px solid var(--border);
+      gap: 4px;
+    }
+    .stat-block:last-child { border-right: none; }
+    .stat-num-big { font-size: 36px; font-weight: 900; color: var(--white); }
+    .stat-num-big .unit { color: var(--green); }
+    .stat-label { color: var(--muted); font-size: 13px; font-weight: 500; }
+
+    /* ── FEATURES ───────────────────────────────────────────── */
+    section { padding: 100px 24px; max-width: 1100px; margin: 0 auto; }
+    .section-label { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+    .section-title { font-size: clamp(28px, 4vw, 44px); font-weight: 900; color: var(--white); line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px; }
+    .section-sub { color: var(--muted); font-size: 16px; max-width: 520px; line-height: 1.7; margin-bottom: 52px; }
+
+    .features-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .feature-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px;
+      transition: border-color .2s, transform .2s;
+    }
+    .feature-card:hover { border-color: rgba(34,197,94,0.4); transform: translateY(-2px); }
+    .feature-icon { font-size: 28px; margin-bottom: 14px; }
+    .feature-title { color: var(--white); font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+    .feature-desc  { color: var(--muted); font-size: 14px; line-height: 1.65; }
+    .feature-tags  { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; }
+    .tag {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--muted); font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 6px;
+    }
+
+    /* ── COACH SPOTLIGHT ────────────────────────────────────── */
+    .spotlight {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px; overflow: hidden;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    }
+    .spotlight-content { padding: 56px 48px; }
+    .spotlight-content .section-label { margin-bottom: 12px; }
+    .spotlight-content .section-title { margin-bottom: 16px; }
+    .spotlight-content .section-sub { margin-bottom: 32px; }
+    .coach-features { display: flex; flex-direction: column; gap: 16px; }
+    .coach-feature { display: flex; gap: 12px; align-items: flex-start; }
+    .coach-feature-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .coach-feature-text .cf-title { color: var(--white); font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .coach-feature-text .cf-desc  { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .spotlight-demo {
+      background: var(--bg); padding: 48px 32px;
+      display: flex; flex-direction: column; gap: 12px;
+      border-left: 1px solid var(--border);
+    }
+    .demo-label { color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 1px; margin-bottom: 4px; }
+
+    /* ── LINE MOVEMENT ──────────────────────────────────────── */
+    .move-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+      padding: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+      align-items: center;
+    }
+    .move-label { color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 16px; }
+    .move-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+    .move-arrow { font-size: 20px; font-weight: 900; }
+    .move-info { flex: 1; }
+    .move-matchup { color: var(--white); font-size: 15px; font-weight: 700; }
+    .move-detail  { color: var(--muted); font-size: 12px; margin-top: 2px; }
+    .move-shift   { color: var(--green); font-weight: 700; }
+    .move-shift.red { color: #f87171; }
+    .move-badge {
+      background: rgba(239,68,68,0.15); color: #f87171;
+      border: 1px solid rgba(239,68,68,0.25); border-radius: 4px;
+      font-size: 9px; font-weight: 700; padding: 2px 7px; letter-spacing: 0.5px;
+    }
+    .move-explain {
+      background: rgba(34,197,94,0.06); border-left: 3px solid var(--green);
+      border-radius: 8px; padding: 14px;
+    }
+    .move-explain-label { color: var(--green); font-size: 10px; font-weight: 700; letter-spacing: 0.8px; margin-bottom: 6px; }
+    .move-explain-text  { color: var(--muted); font-size: 12px; line-height: 1.6; font-style: italic; }
+
+    /* ── SOCIAL ─────────────────────────────────────────────── */
+    .social-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .social-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px; overflow: hidden;
+    }
+    .social-card-icon { font-size: 32px; margin-bottom: 12px; }
+    .social-card-title { color: var(--white); font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .social-card-desc  { color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+    /* ── CTA ────────────────────────────────────────────────── */
+    .cta-section {
+      text-align: center; padding: 100px 24px 120px;
+      max-width: 700px; margin: 0 auto;
+    }
+    .cta-section .section-title { font-size: clamp(32px, 5vw, 54px); margin-bottom: 20px; }
+    .cta-section p { color: var(--muted); font-size: 17px; margin-bottom: 40px; line-height: 1.7; }
+    .app-store-btn {
+      display: inline-flex; align-items: center; gap: 12px;
+      background: var(--white); color: #000;
+      padding: 14px 28px; border-radius: 14px;
+      text-decoration: none; font-weight: 700; font-size: 15px;
+      transition: opacity .2s, transform .1s;
+    }
+    .app-store-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .app-store-btn svg { width: 22px; height: 22px; }
+
+    /* ── FOOTER ─────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border); padding: 32px 40px;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-logo { color: var(--muted); font-size: 13px; }
+    .footer-logo strong { color: var(--white); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-link { color: var(--muted); font-size: 13px; text-decoration: none; transition: color .2s; }
+    .footer-link:hover { color: var(--white); }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 14px 20px; }
+      .nav-right .nav-link { display: none; }
+      .stat-block { padding: 24px 28px; }
+      .spotlight { grid-template-columns: 1fr; }
+      .spotlight-demo { border-left: none; border-top: 1px solid var(--border); }
+      .move-card { grid-template-columns: 1fr; }
+      .social-grid { grid-template-columns: 1fr; }
+      footer { justify-content: center; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <span class="nav-logo-icon">🏈</span>
+    <span class="nav-logo-text">
+      <span>FOOTBALL</span>
+      <span>SUNDAY</span>
+    </span>
+  </a>
+  <div class="nav-right">
+    <a href="#features" class="nav-link">Features</a>
+    <a href="#coach"    class="nav-link">AI Coach</a>
+    <a href="#social"   class="nav-link">Social</a>
+    <a href="https://apps.apple.com/app/id6777887630" class="btn-primary" target="_blank">
+      Download
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">🏈 Now available on iOS</div>
+  <h1>Your NFL<br/><span class="highlight">Command Center</span></h1>
+  <p>
+    Fantasy, betting, live scores, and AI-powered insights —
+    all in one app built for serious NFL fans.
+  </p>
+  <div class="hero-cta">
+    <a href="https://apps.apple.com/app/id6777887630" class="btn-primary" target="_blank">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+      Download on the App Store
+    </a>
+    <a href="#features" class="btn-secondary">See Features ↓</a>
+  </div>
+
+  <!-- Phone mockups -->
+  <div class="phone-wrapper">
+    <div class="phone short">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-header">
+          <span class="screen-title">Friends</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+          <div class="chat-bubble-them">Who should I start this week — CMC or Bijan?</div>
+          <div class="chat-coach">
+            <div class="chat-coach-label">🎙️ COACH</div>
+            <div class="chat-coach-text">Start CMC — SF has a weaker run D and he has 14+ targets this week. Bijan is a sit vs ATL...</div>
+          </div>
+          <div class="chat-bubble-me">Taking CMC, thanks Coach 🙌</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone tall">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-header">
+          <span class="screen-title">Dashboard</span>
+          <span class="screen-badge">LIVE</span>
+        </div>
+        <div class="score-card">
+          <div class="score-row">
+            <span class="team-name">🏈 KC Chiefs</span>
+            <span class="score-num">17</span>
+          </div>
+          <div class="score-divider"></div>
+          <div class="score-row">
+            <span class="team-name">⚡ BUF Bills</span>
+            <span class="score-num">14</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;align-items:center;">
+            <span class="live-pill">Q3 8:42</span>
+            <div class="stat-row" style="gap:12px;">
+              <div class="stat-item">Spread <span>-3</span></div>
+              <div class="stat-item">ML <span>-165</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="line-card">
+          <div class="line-label">📉 LINE MOVEMENT</div>
+          <div class="line-value">PHI Eagles · Spread</div>
+          <div class="line-move">▲ -3 → -5.5 · +2 pts · <span style="color:#f87171">BIG MOVE</span></div>
+        </div>
+        <div class="line-card" style="border-left-color:#60a5fa;">
+          <div class="line-label" style="color:#60a5fa;">☀️ SUNDAY STATUS</div>
+          <div class="chat-coach-text" style="font-size:10px;">Your Eagles stack looks vulnerable — Hurts is questionable. Consider swapping in your Mahomes backup...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone short">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="screen-header">
+          <span class="screen-title">Fantasy</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;flex:1;">
+          <div class="score-card" style="padding:10px;">
+            <div style="color:#71717a;font-size:9px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;">SLEEPER</div>
+            <div style="color:#fff;font-size:12px;font-weight:700;">Payne's Ballers</div>
+            <div style="color:#22c55e;font-size:11px;margin-top:2px;">7-3 · Rank #2</div>
+          </div>
+          <div class="score-card" style="padding:10px;">
+            <div style="color:#71717a;font-size:9px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;">ESPN</div>
+            <div style="color:#fff;font-size:12px;font-weight:700;">Dynasty Kings</div>
+            <div style="color:#22c55e;font-size:11px;margin-top:2px;">6-4 · Rank #4</div>
+          </div>
+          <div class="score-card" style="padding:10px;">
+            <div style="color:#71717a;font-size:9px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;">YAHOO</div>
+            <div style="color:#fff;font-size:12px;font-weight:700;">Championship Run</div>
+            <div style="color:#22c55e;font-size:11px;margin-top:2px;">8-2 · Rank #1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-block">
+    <div class="stat-num-big">3<span class="unit">+</span></div>
+    <div class="stat-label">Fantasy Platforms</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-num-big">32<span class="unit"></span></div>
+    <div class="stat-label">NFL Teams Tracked</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-num-big">AI<span class="unit"></span></div>
+    <div class="stat-label">Powered Analysis</div>
+  </div>
+  <div class="stat-block">
+    <div class="stat-num-big">1<span class="unit"></span></div>
+    <div class="stat-label">App for Everything</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">Everything in one place</div>
+  <div class="section-title">Built for the serious fan</div>
+  <div class="section-sub">
+    Stop juggling five apps. Football Sunday combines every tool a fantasy player,
+    bettor, or diehard fan needs into a single command center.
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🏈</div>
+      <div class="feature-title">Live Scores & Game Detail</div>
+      <div class="feature-desc">Real-time scores, drive-by-drive play-by-play, box scores, and linescore breakdowns for every NFL game — updated live on game day.</div>
+      <div class="feature-tags">
+        <span class="tag">Live Updates</span>
+        <span class="tag">Play-by-Play</span>
+        <span class="tag">Box Scores</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">👥</div>
+      <div class="feature-title">All Your Fantasy Leagues</div>
+      <div class="feature-desc">Connect Sleeper, ESPN, and Yahoo Fantasy in one place. View rosters, live scores, standings, brackets, and trade history across all platforms.</div>
+      <div class="feature-tags">
+        <span class="tag">Sleeper</span>
+        <span class="tag">ESPN</span>
+        <span class="tag">Yahoo</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💰</div>
+      <div class="feature-title">Betting Intelligence</div>
+      <div class="feature-desc">Track your bet slips and DFS lineups. Automatically detects correlation risks across your fantasy, bets, and DFS exposure before they cost you.</div>
+      <div class="feature-tags">
+        <span class="tag">Bet Tracking</span>
+        <span class="tag">DFS</span>
+        <span class="tag">Correlation Alerts</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📉</div>
+      <div class="feature-title">Line Movement Tracker</div>
+      <div class="feature-desc">Tracks spread and moneyline shifts across all major sportsbooks using implied probability. When a line moves, tap Why for an AI-generated explanation citing injuries, weather, or sharp action.</div>
+      <div class="feature-tags">
+        <span class="tag">Spreads</span>
+        <span class="tag">Moneylines</span>
+        <span class="tag">AI Explanations</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-title">Live NFL Odds</div>
+      <div class="feature-desc">Live point spreads, moneylines, and Super Bowl futures. Best available odds highlighted across DraftKings, FanDuel, BetMGM, and more.</div>
+      <div class="feature-tags">
+        <span class="tag">Spreads</span>
+        <span class="tag">Futures</span>
+        <span class="tag">Best Lines</span>
+      </div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">☀️</div>
+      <div class="feature-title">Sunday Status</div>
+      <div class="feature-desc">Your personalized AI briefing every game day. Coach summarizes your fantasy situation, open bets, and key player exposures so you know exactly what to watch.</div>
+      <div class="feature-tags">
+        <span class="tag">AI Summary</span>
+        <span class="tag">Weekly Briefing</span>
+        <span class="tag">Personalized</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COACH SPOTLIGHT -->
+<section id="coach" style="padding-top: 0;">
+  <div class="spotlight">
+    <div class="spotlight-content">
+      <div class="section-label">Powered by Claude AI</div>
+      <div class="section-title">Meet your<br/>AI Coach</div>
+      <div class="section-sub">
+        Ask anything. Get answers grounded in your actual leagues, bets, and exposure — not generic advice.
+      </div>
+      <div class="coach-features">
+        <div class="coach-feature">
+          <div class="coach-feature-icon">🏆</div>
+          <div class="coach-feature-text">
+            <div class="cf-title">Lineup decisions</div>
+            <div class="cf-desc">Coach knows your exact starters, bench, and matchups. Get specific sit/start advice in seconds.</div>
+          </div>
+        </div>
+        <div class="coach-feature">
+          <div class="coach-feature-icon">💸</div>
+          <div class="coach-feature-text">
+            <div class="cf-title">Betting analysis</div>
+            <div class="cf-desc">Asks Coach about a spread — it searches injuries, weather, team trends, and ATS records before answering.</div>
+          </div>
+        </div>
+        <div class="coach-feature">
+          <div class="coach-feature-icon">💬</div>
+          <div class="coach-feature-text">
+            <div class="cf-title">@coach in group chats</div>
+            <div class="cf-desc">Tag @coach in any friend chat for AI analysis that knows both players' rosters and leagues.</div>
+          </div>
+        </div>
+        <div class="coach-feature">
+          <div class="coach-feature-icon">🔍</div>
+          <div class="coach-feature-text">
+            <div class="cf-title">Live web search</div>
+            <div class="cf-desc">Pulls from ESPN, NFL.com, PFT, and Rotowire in real time. Always current, never outdated.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="spotlight-demo">
+      <div class="demo-label">ASK COACH</div>
+      <div class="chat-bubble-them">Should I start Bijan or Jonathan Taylor this week?</div>
+      <div class="chat-coach">
+        <div class="chat-coach-label">🎙️ COACH — searching injuries & matchups…</div>
+        <div class="chat-coach-text">
+          Start <strong style="color:#22c55e">Bijan Robinson</strong>. He's coming off 24 carries against a Packers D ranked 28th vs RBs. Taylor is Q with an ankle and limited in practice. Bijan has upside as a TD vulture if Atlanta trails early — they've trended run-heavy in 2025. Start him with confidence.
+        </div>
+      </div>
+      <div class="chat-bubble-me" style="align-self:flex-end;">Perfect, starting Bijan 🏃</div>
+      <div style="margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--border);">
+        <div class="demo-label" style="margin-bottom: 8px;">HISTORY SAVED TO YOUR ACCOUNT</div>
+        <div style="color:var(--muted);font-size:12px;line-height:1.5;">All conversations saved across sessions. Pick up where you left off after any login.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LINE MOVEMENT SPOTLIGHT -->
+<section style="padding-top: 0;">
+  <div style="display:flex;align-items:flex-start;gap:40px;flex-wrap:wrap;margin-bottom:32px;">
+    <div style="flex:1;min-width:260px;">
+      <div class="section-label">Betting Intelligence</div>
+      <div class="section-title">Know why the<br/>line moved</div>
+      <div class="section-sub" style="margin-bottom:0;">
+        Most bettors see a line shift and guess. Football Sunday tracks every spread and moneyline
+        using implied probability — not raw units — and explains every significant move with live AI web search.
+      </div>
+    </div>
+    <div style="flex:1;min-width:300px;">
+      <div class="move-label">📉 LINE MOVEMENT EXAMPLE</div>
+      <div class="move-card" style="grid-template-columns:1fr;">
+        <div>
+          <div class="move-row">
+            <span class="move-arrow" style="color:#f87171;">▲</span>
+            <div class="move-info">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span class="move-matchup">Eagles @ Cowboys</span>
+                <span class="move-badge">BIG MOVE</span>
+              </div>
+              <div class="move-detail">
+                Spread · -3 → -6.5
+                <span class="move-shift red"> (+3.5 pts)</span>
+              </div>
+            </div>
+          </div>
+          <div class="move-explain">
+            <div class="move-explain-label">🔍 WHY IT MOVED</div>
+            <div class="move-explain-text">
+              Dak Prescott was listed as doubtful Friday with a hamstring injury. Late sharp money moved to Philadelphia following the official designation, pushing the line through the key number of -3 and past -6.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SOCIAL -->
+<section id="social" style="padding-top: 0;">
+  <div class="section-label">Community</div>
+  <div class="section-title">Better with friends</div>
+  <div class="section-sub">
+    Find fans who follow the same teams and leagues. Chat about matchups,
+    get @coach analysis for both of you, and never miss a message.
+  </div>
+  <div class="social-grid">
+    <div class="social-card">
+      <div class="social-card-icon">🤝</div>
+      <div class="social-card-title">Coach Match</div>
+      <div class="social-card-desc">
+        AI analyzes your starred teams, fantasy rosters, and bet history to find users who share your NFL interests. Add them with one tap.
+      </div>
+    </div>
+    <div class="social-card">
+      <div class="social-card-icon">💬</div>
+      <div class="social-card-title">Friend Chats + @coach</div>
+      <div class="social-card-desc">
+        Message any friend directly. Type @coach in any conversation for AI analysis that sees both players' rosters — perfect for trade negotiations or lineup debates.
+      </div>
+    </div>
+    <div class="social-card">
+      <div class="social-card-icon">🔔</div>
+      <div class="social-card-title">Unread Badges</div>
+      <div class="social-card-desc">
+        Per-friend unread counts. Never miss a message from your league mates on game day.
+      </div>
+    </div>
+    <div class="social-card">
+      <div class="social-card-icon">🌐</div>
+      <div class="social-card-title">Persistent History</div>
+      <div class="social-card-desc">
+        All messages saved to your account. Chat history survives across devices and logins — pick up any conversation exactly where you left off.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div class="cta-section">
+  <div class="section-label" style="display:inline-block;margin-bottom:16px;">Download Today</div>
+  <div class="section-title">Your game day<br/>starts here</div>
+  <p>
+    Free to download. Connect your fantasy leagues, start tracking bets, and let Coach handle the rest.
+  </p>
+  <a href="https://apps.apple.com/app/id6777887630" class="app-store-btn" target="_blank">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+    Download on the App Store
+  </a>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">
+    🏈 <strong>Football Sunday</strong> &nbsp;·&nbsp; Your NFL Command Center
+  </div>
+  <div class="footer-links">
+    <a href="https://captainalex5.github.io/football-sunday-auth/privacy" class="footer-link">Privacy Policy</a>
+    <a href="mailto:alexander.payne@moser-inc.com" class="footer-link">Contact</a>
+  </div>
+</footer>
+
+</body>
 </html>
